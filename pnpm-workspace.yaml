@@ -1,0 +1,8 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+  - 'admin-panel'
+
+# Configurações
+shamefully-hoist: true
+strict-peer-dependencies: false
