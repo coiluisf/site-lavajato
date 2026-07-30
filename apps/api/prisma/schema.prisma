@@ -1,12 +1,10 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
+// Prisma schema para MySQL (Hostinger)
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -19,7 +17,7 @@ model User {
   email     String   @unique
   name      String
   phone     String?
-  passwordHash String
+  passwordHash String   @db.Text
 
   role      Role     @default(OWNER)
   status    UserStatus @default(ACTIVE)
@@ -41,12 +39,12 @@ model User {
 model UserSession {
   id                String   @id @default(cuid())
   userId            String
-  refreshTokenHash  String   // Hash do token
+  refreshTokenHash  String   @db.Text
   expiresAt         DateTime
   issuedAt          DateTime @default(now())
   revokedAt         DateTime?
 
-  userAgent         String?
+  userAgent         String?  @db.Text
   ipAddress         String?
   status            SessionStatus @default(ACTIVE)
 
@@ -59,7 +57,7 @@ model UserSession {
 model PasswordResetToken {
   id        String   @id @default(cuid())
   userId    String
-  tokenHash String   // Hash do token
+  tokenHash String   @db.Text
   expiresAt DateTime
   usedAt    DateTime?
 
@@ -79,14 +77,14 @@ model Company {
   id              String   @id @default(cuid())
   name            String
   displayName     String?
-  cnpjCpf         String   @unique
+  cnpjCpf         String   @unique(map: "unique_cnpj_cpf")
 
   phone           String?
   whatsapp        String?
   email           String?
-  address         String?
+  address         String?  @db.Text
 
-  businessHours   Json?    // { "monday": "08:00-18:00", ... }
+  businessHours   Json?
   status          CompanyStatus @default(ACTIVE)
 
   createdAt       DateTime @default(now())
@@ -118,15 +116,15 @@ model CompanySettings {
   phone           String?
   whatsapp        String?
   email           String?
-  address         String?
+  address         String?  @db.Text
   city            String?
   state           String?
   postalCode      String?
 
   businessHours   Json?
-  noteHeader      String?
-  noteFooter      String?
-  receiptFooter   String?
+  noteHeader      String?  @db.Text
+  noteFooter      String?  @db.Text
+  receiptFooter   String?  @db.Text
 
   timezone        String   @default("America/Sao_Paulo")
   language        String   @default("pt-BR")
@@ -153,11 +151,11 @@ model Customer {
   whatsapp  String?
   cpf       String?
 
-  address   String?
+  address   String?  @db.Text
   city      String?
   state     String?
 
-  notes     String?
+  notes     String?  @db.Text
   status    CustomerStatus @default(ACTIVE)
 
   createdAt DateTime @default(now())
@@ -167,7 +165,7 @@ model Customer {
   vehicles Vehicle[]
   appointments Appointment[]
 
-  @@unique([companyId, phone])
+  @@unique([companyId, phone], map: "unique_company_phone")
   @@index([companyId])
   @@map("customers")
 }
@@ -177,14 +175,14 @@ model Vehicle {
   companyId   String
   customerId  String
 
-  plate       String   @unique // Normalizado (sem caracteres especiais)
-  make        String   // Marca (Toyota, Volkswagen, etc)
-  model       String   // Modelo
+  plate       String   @unique
+  make        String
+  model       String
   color       String?
   year        Int?
 
   categoryId  String
-  notes       String?
+  notes       String?  @db.Text
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -195,7 +193,7 @@ model Vehicle {
   appointments Appointment[]
   orders ServiceOrder[]
 
-  @@unique([companyId, plate])
+  @@unique([companyId, plate], map: "unique_company_plate")
   @@index([companyId])
   @@index([customerId])
   @@map("vehicles")
@@ -206,7 +204,7 @@ model VehicleCategory {
   companyId String
 
   name      String
-  description String?
+  description String?  @db.Text
   sortOrder Int      @default(0)
   isActive  Boolean  @default(true)
 
@@ -215,7 +213,7 @@ model VehicleCategory {
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   vehicles Vehicle[]
 
-  @@unique([companyId, name])
+  @@unique([companyId, name], map: "unique_company_category")
   @@index([companyId])
   @@map("vehicle_categories")
 }
@@ -229,7 +227,7 @@ model Service {
   companyId   String
 
   name        String
-  description String?
+  description String?  @db.Text
   durationMinutes Int
   isActive    Boolean  @default(true)
   sortOrder   Int      @default(0)
@@ -241,7 +239,7 @@ model Service {
   prices ServicePrice[]
   orderItems ServiceOrderItem[]
 
-  @@unique([companyId, name])
+  @@unique([companyId, name], map: "unique_company_service")
   @@index([companyId])
   @@map("services")
 }
@@ -264,7 +262,7 @@ model ServicePrice {
   service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
   category VehicleCategory @relation(fields: [vehicleCategoryId], references: [id])
 
-  @@unique([companyId, serviceId, vehicleCategoryId])
+  @@unique([companyId, serviceId, vehicleCategoryId], map: "unique_company_service_category")
   @@index([companyId])
   @@map("service_prices")
 }
@@ -278,7 +276,7 @@ model Employee {
   companyId   String
 
   name        String
-  cpf         String   // Normalizado
+  cpf         String
   phone       String?
   email       String?
 
@@ -287,7 +285,7 @@ model Employee {
   salary      Decimal? @db.Decimal(10, 2)
 
   status      EmployeeStatus @default(ACTIVE)
-  userId      String?  // Referência ao usuário do sistema (se tiver)
+  userId      String?
   hiredAt     DateTime
 
   createdAt   DateTime @default(now())
@@ -295,7 +293,7 @@ model Employee {
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  @@unique([companyId, cpf])
+  @@unique([companyId, cpf], map: "unique_company_cpf")
   @@index([companyId])
   @@map("employees")
 }
@@ -313,7 +311,7 @@ model Appointment {
 
   scheduledAt DateTime
   status      AppointmentStatus @default(SCHEDULED)
-  notes       String?
+  notes       String?  @db.Text
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -335,7 +333,7 @@ model ServiceOrder {
   customerId  String
   vehicleId   String
 
-  orderNumber Int      // Número sequencial por empresa
+  orderNumber Int
   status      OrderStatus @default(DRAFT)
 
   totalPrice  Decimal? @db.Decimal(10, 2)
@@ -350,7 +348,7 @@ model ServiceOrder {
   items ServiceOrderItem[]
   payments Payment[]
 
-  @@unique([companyId, orderNumber])
+  @@unique([companyId, orderNumber], map: "unique_company_order_number")
   @@index([companyId])
   @@index([customerId])
   @@map("service_orders")
@@ -385,7 +383,7 @@ model Payment {
   status      PaymentStatus @default(PENDING)
 
   paidAt      DateTime?
-  notes       String?
+  notes       String?  @db.Text
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -426,7 +424,7 @@ model Product {
   companyId   String
 
   name        String
-  description String?
+  description String?  @db.Text
   quantity    Int      @default(0)
 
   costPrice   Decimal? @db.Decimal(10, 2)
@@ -446,9 +444,9 @@ model StockMovement {
   id          String   @id @default(cuid())
   productId   String
 
-  type        MovementType // ENTRADA, SAIDA, AJUSTE
+  type        MovementType
   quantity    Int
-  notes       String?
+  notes       String?  @db.Text
 
   createdAt   DateTime @default(now())
 
@@ -467,18 +465,17 @@ model AuditLog {
   companyId   String
   userId      String
 
-  action      String   // CREATE, UPDATE, DELETE, etc
-  entityType  String   // "Customer", "Vehicle", "Order", etc
-  entityId    String   // ID da entidade modificada
+  action      String
+  entityType  String
+  entityId    String
 
-  changes     Json?    // { "field": { "from": "old", "to": "new" } }
-
+  changes     Json?
   ipAddress   String?
-  userAgent   String?
+  userAgent   String?  @db.Text
 
   timestamp   DateTime @default(now())
   status      AuditStatus @default(SUCCESS)
-  errorMessage String?
+  errorMessage String?  @db.Text
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
