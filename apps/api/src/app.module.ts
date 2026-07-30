@@ -4,6 +4,9 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { PasswordResetModule } from './modules/password-reset/password-reset.module';
+import { CompaniesModule } from './modules/companies/companies.module';
+import { CustomersModule } from './modules/customers/customers.module';
+import { VehiclesModule } from './modules/vehicles/vehicles.module';
 
 @Module({
   imports: [
@@ -21,6 +24,9 @@ import { PasswordResetModule } from './modules/password-reset/password-reset.mod
     HealthModule,
     AuthModule,
     PasswordResetModule,
+    CompaniesModule,
+    CustomersModule,
+    VehiclesModule,
   ],
 })
 export class AppModule {}
