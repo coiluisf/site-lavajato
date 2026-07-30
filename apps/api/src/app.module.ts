@@ -7,6 +7,8 @@ import { PasswordResetModule } from './modules/password-reset/password-reset.mod
 import { CompaniesModule } from './modules/companies/companies.module';
 import { CustomersModule } from './modules/customers/customers.module';
 import { VehiclesModule } from './modules/vehicles/vehicles.module';
+import { ServicesModule } from './modules/services/services.module';
+import { EmployeesModule } from './modules/employees/employees.module';
 
 @Module({
   imports: [
@@ -27,6 +29,8 @@ import { VehiclesModule } from './modules/vehicles/vehicles.module';
     CompaniesModule,
     CustomersModule,
     VehiclesModule,
+    ServicesModule,
+    EmployeesModule,
   ],
 })
 export class AppModule {}
