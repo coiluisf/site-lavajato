@@ -14,6 +14,8 @@ overrides:
   electron-to-chromium: 1.5.396
   fast-uri: 3.1.4
 
+pnpmfileChecksum: sha256-OdCARuuxA1ITNoh9Rbiakh1gUaWy0TwrRXi7tIRCUKI=
+
 importers:
 
   .:
