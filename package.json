@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "nest start --watch",
-    "build": "nest build",
+    "build": "prisma generate && nest build",
     "start": "node dist/main",
     "start:prod": "NODE_ENV=production node dist/main",
     "type-check": "tsc --noEmit",
@@ -15,8 +15,7 @@
     "test:cov": "jest --coverage",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "node prisma/seed.js",
-    "postinstall": "prisma generate"
+    "prisma:seed": "node prisma/seed.js"
   },
   "dependencies": {
     "@nestjs/common": "^10.2.10",
