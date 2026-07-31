@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaClient } from '@prisma/client';
-import * as argon2 from 'argon2';
+import * as bcryptjs from 'bcryptjs';
 
 @Injectable()
 export class AuthService {
@@ -19,7 +19,7 @@ export class AuthService {
       throw new UnauthorizedException('Credenciais inválidas');
     }
 
-    const passwordMatch = await argon2.verify(user.passwordHash, password);
+    const passwordMatch = await bcryptjs.compare(password, user.passwordHash);
     if (!passwordMatch) {
       throw new UnauthorizedException('Credenciais inválidas');
     }
@@ -45,8 +45,9 @@ export class AuthService {
   }
 
   async logout(userId: string, refreshToken: string) {
+    const hashedToken = await bcryptjs.hash(refreshToken, 10);
     await this.prisma.userSession.updateMany({
-      where: { userId, refreshTokenHash: await argon2.hash(refreshToken) },
+      where: { userId, refreshTokenHash: hashedToken },
       data: { revokedAt: new Date() },
     });
   }
@@ -64,15 +65,16 @@ export class AuthService {
       throw new UnauthorizedException('Sessão inválida ou expirada');
     }
 
-    const tokenMatch = await argon2.verify(session.refreshTokenHash, refreshToken);
+    const tokenMatch = await bcryptjs.compare(refreshToken, session.refreshTokenHash);
     if (!tokenMatch) {
       throw new UnauthorizedException('Refresh token inválido');
     }
 
     const tokens = await this.generateTokens(userId);
+    const hashedRefreshToken = await bcryptjs.hash(tokens.refreshToken, 10);
     await this.prisma.userSession.update({
       where: { id: session.id },
-      data: { refreshTokenHash: await argon2.hash(tokens.refreshToken) },
+      data: { refreshTokenHash: hashedRefreshToken },
     });
 
     return tokens;
@@ -87,12 +89,12 @@ export class AuthService {
       throw new UnauthorizedException('Usuário não encontrado');
     }
 
-    const passwordMatch = await argon2.verify(user.passwordHash, currentPassword);
+    const passwordMatch = await bcryptjs.compare(currentPassword, user.passwordHash);
     if (!passwordMatch) {
       throw new BadRequestException('Senha atual incorreta');
     }
 
-    const hashedPassword = await argon2.hash(newPassword);
+    const hashedPassword = await bcryptjs.hash(newPassword, 10);
     await this.prisma.user.update({
       where: { id: userId },
       data: {
@@ -119,7 +121,7 @@ export class AuthService {
   }
 
   private async createSession(userId: string, refreshToken: string) {
-    const hashedToken = await argon2.hash(refreshToken);
+    const hashedToken = await bcryptjs.hash(refreshToken, 10);
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 

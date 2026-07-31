@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import * as argon2 from 'argon2';
+import * as bcryptjs from 'bcryptjs';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -21,7 +21,7 @@ export class PasswordResetService {
     }
 
     const resetToken = this.generateToken();
-    const tokenHash = await argon2.hash(resetToken);
+    const tokenHash = await bcryptjs.hash(resetToken, 10);
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 1);
 
@@ -52,12 +52,12 @@ export class PasswordResetService {
       throw new BadRequestException('Token de recuperação inválido ou expirado');
     }
 
-    const tokenMatch = await argon2.verify(resetRecord.tokenHash, token);
+    const tokenMatch = await bcryptjs.compare(token, resetRecord.tokenHash);
     if (!tokenMatch) {
       throw new BadRequestException('Token de recuperação inválido');
     }
 
-    const hashedPassword = await argon2.hash(newPassword);
+    const hashedPassword = await bcryptjs.hash(newPassword, 10);
 
     await this.prisma.$transaction([
       this.prisma.user.update({
