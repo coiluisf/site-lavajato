@@ -15,9 +15,3 @@ overrides:
   'electron-to-chromium': '1.5.396'
   'js-yaml': '4.3.0'
   'fast-uri': '3.0.0'
-
-onlyBuiltDependencies:
-  - '@nestjs/core'
-  - '@prisma/client'
-  - '@prisma/engines'
-  - 'prisma'
