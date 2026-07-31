@@ -27,5 +27,17 @@
     "prettier": "^3.1.0",
     "turbo": "^1.11.2",
     "typescript": "^5.3.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "@babel/generator": "7.29.7",
+      "@babel/parser": "7.29.7",
+      "@babel/traverse": "7.29.7",
+      "@babel/types": "7.29.7",
+      "@napi-rs/wasm-runtime": "1.1.6",
+      "baseline-browser-mapping": "2.10.43",
+      "electron-to-chromium": "1.5.396",
+      "fast-uri": "3.1.4"
+    }
   }
 }
