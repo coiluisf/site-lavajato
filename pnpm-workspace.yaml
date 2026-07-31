@@ -9,6 +9,7 @@ overrides:
   '@napi-rs/wasm-runtime': '1.1.6'
   'baseline-browser-mapping': '2.10.43'
   'electron-to-chromium': '1.5.396'
+  'js-yaml': '4.3.0'
 
 onlyBuiltDependencies:
   - 'unrs-resolver'
