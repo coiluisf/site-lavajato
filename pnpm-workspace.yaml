@@ -11,5 +11,5 @@ overrides:
   'electron-to-chromium': '1.5.396'
   'js-yaml': '4.3.0'
 
-onlyBuiltDependencies:
+ignoredBuiltDependencies:
   - 'unrs-resolver'
