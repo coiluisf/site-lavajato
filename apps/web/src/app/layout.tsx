@@ -1,15 +1,14 @@
-import type { Metadata } from 'next';
-import './globals.css';
+'use client';
 
-export const metadata: Metadata = {
-  title: 'Site Lavajato',
-  description: 'Sistema de gestão para lava-jatos',
-};
+import './globals.css';
+import { CompanyProvider } from '@/context/CompanyContext';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR">
-      <body>{children}</body>
+      <body>
+        <CompanyProvider>{children}</CompanyProvider>
+      </body>
     </html>
   );
 }

@@ -1,12 +1,11 @@
 import type { Config } from 'tailwindcss';
-import defaultTheme from 'tailwindcss/defaultConfig';
 
 const config: Config = {
   content: ['./src/**/*.{js,ts,jsx,tsx,mdx}'],
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-sans)', ...defaultTheme.theme.fontFamily.sans],
+        sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
       },
       colors: {
         border: 'hsl(var(--border))',
