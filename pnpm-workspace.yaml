@@ -1,9 +1,6 @@
-packages:
-  - 'apps/*'
-  - 'packages/*'
-  - 'admin-panel'
+# Minimal pnpm configuration for supply-chain policy compliance
+# NO 'packages:' field - keeps this as standalone project (no workspace detection)
 
-# Configurações gerais
 shamefully-hoist: true
 strict-peer-dependencies: false
 
@@ -16,13 +13,8 @@ overrides:
   '@napi-rs/wasm-runtime': '1.1.6'
   'baseline-browser-mapping': '2.10.43'
   'electron-to-chromium': '1.5.396'
-  'fast-uri': '3.1.4'
+  'js-yaml': '4.3.0'
 
-# Allow build scripts for packages that require native builds
-onlyBuiltDependencies:
-  - '@nestjs/core'
-  - '@prisma/client'
-  - '@prisma/engines'
-  - 'argon2'
-  - 'prisma'
+ignoredBuiltDependencies:
   - 'unrs-resolver'
+  - 'argon2'
