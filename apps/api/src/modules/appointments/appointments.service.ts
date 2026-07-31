@@ -6,7 +6,7 @@ import { CreateAppointmentDto, UpdateAppointmentDto } from './dto';
 export class AppointmentsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(companyId: number, data: CreateAppointmentDto) {
+  async create(companyId: string, data: CreateAppointmentDto) {
     const company = await this.prisma.company.findUnique({
       where: { id: companyId },
     });
@@ -16,7 +16,7 @@ export class AppointmentsService {
     }
 
     const vehicle = await this.prisma.vehicle.findFirst({
-      where: { id: data.vehicleId, customer: { companyId } },
+      where: { id: data.vehicleId, companyId },
     });
 
     if (!vehicle) {
@@ -31,16 +31,16 @@ export class AppointmentsService {
       throw new NotFoundException('Serviço não encontrado');
     }
 
-    const appointmentDateTime = new Date(data.appointmentDate);
-    if (appointmentDateTime < new Date()) {
+    const scheduledAt = new Date(data.scheduledAt);
+    if (scheduledAt < new Date()) {
       throw new BadRequestException('Data do agendamento deve ser no futuro');
     }
 
     const existingAppointment = await this.prisma.appointment.findFirst({
       where: {
         vehicleId: data.vehicleId,
-        appointmentDate: appointmentDateTime,
-        status: { notIn: ['cancelled', 'completed'] },
+        scheduledAt,
+        status: { notIn: ['CANCELLED', 'COMPLETED'] },
       },
     });
 
@@ -50,29 +50,27 @@ export class AppointmentsService {
 
     return this.prisma.appointment.create({
       data: {
-        appointmentDate: appointmentDateTime,
+        scheduledAt,
         notes: data.notes,
-        status: 'scheduled',
+        status: 'SCHEDULED',
         vehicleId: data.vehicleId,
         serviceId: data.serviceId,
         companyId,
         customerId: vehicle.customerId,
-        employeeId: data.employeeId || undefined,
       },
       include: {
         vehicle: { include: { customer: true } },
         service: true,
-        employee: true,
       },
     });
   }
 
-  async findAll(companyId: number, filter?: { status?: string; date?: string }, page = 1, limit = 20) {
+  async findAll(companyId: string, filter?: { status?: string; date?: string }, page = 1, limit = 20) {
     const skip = (page - 1) * limit;
     const where: any = { companyId };
 
     if (filter?.status) {
-      where.status = filter.status;
+      where.status = filter.status.toUpperCase();
     }
 
     if (filter?.date) {
@@ -80,7 +78,7 @@ export class AppointmentsService {
       const endDate = new Date(startDate);
       endDate.setDate(endDate.getDate() + 1);
 
-      where.appointmentDate = {
+      where.scheduledAt = {
         gte: startDate,
         lt: endDate,
       };
@@ -92,9 +90,8 @@ export class AppointmentsService {
         include: {
           vehicle: { include: { customer: true } },
           service: true,
-          employee: true,
         },
-        orderBy: { appointmentDate: 'asc' },
+        orderBy: { scheduledAt: 'asc' },
         skip,
         take: limit,
       }),
@@ -112,13 +109,12 @@ export class AppointmentsService {
     };
   }
 
-  async findById(companyId: number, id: number) {
+  async findById(companyId: string, id: string) {
     const appointment = await this.prisma.appointment.findFirst({
       where: { id, companyId },
       include: {
         vehicle: { include: { customer: true, category: true } },
         service: true,
-        employee: true,
       },
     });
 
@@ -129,7 +125,7 @@ export class AppointmentsService {
     return appointment;
   }
 
-  async update(companyId: number, id: number, data: UpdateAppointmentDto) {
+  async update(companyId: string, id: string, data: UpdateAppointmentDto) {
     const appointment = await this.prisma.appointment.findFirst({
       where: { id, companyId },
     });
@@ -138,22 +134,22 @@ export class AppointmentsService {
       throw new NotFoundException('Agendamento não encontrado');
     }
 
-    if (data.appointmentDate) {
-      const newDate = new Date(data.appointmentDate);
-      if (newDate < new Date() && appointment.status !== 'completed') {
+    if (data.scheduledAt) {
+      const newDate = new Date(data.scheduledAt);
+      if (newDate < new Date() && appointment.status !== 'COMPLETED') {
         throw new BadRequestException('Data deve ser no futuro');
       }
 
-      if (appointment.status === 'in_progress' || appointment.status === 'completed') {
-        throw new BadRequestException('Não é possível alterar agendamentos em andamento ou completos');
+      if (appointment.status === 'COMPLETED' || appointment.status === 'CANCELLED') {
+        throw new BadRequestException('Não é possível alterar agendamentos completos ou cancelados');
       }
 
       const conflict = await this.prisma.appointment.findFirst({
         where: {
           vehicleId: appointment.vehicleId,
-          appointmentDate: newDate,
+          scheduledAt: newDate,
           id: { not: id },
-          status: { notIn: ['cancelled', 'completed'] },
+          status: { notIn: ['CANCELLED', 'COMPLETED'] },
         },
       });
 
@@ -165,20 +161,18 @@ export class AppointmentsService {
     return this.prisma.appointment.update({
       where: { id },
       data: {
-        appointmentDate: data.appointmentDate ? new Date(data.appointmentDate) : undefined,
+        scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : undefined,
         notes: data.notes ?? appointment.notes,
         status: data.status ?? appointment.status,
-        employeeId: data.employeeId ?? appointment.employeeId,
       },
       include: {
         vehicle: { include: { customer: true } },
         service: true,
-        employee: true,
       },
     });
   }
 
-  async cancel(companyId: number, id: number) {
+  async cancel(companyId: string, id: string) {
     const appointment = await this.prisma.appointment.findFirst({
       where: { id, companyId },
     });
@@ -187,17 +181,17 @@ export class AppointmentsService {
       throw new NotFoundException('Agendamento não encontrado');
     }
 
-    if (appointment.status === 'completed') {
+    if (appointment.status === 'COMPLETED') {
       throw new BadRequestException('Não é possível cancelar agendamentos completos');
     }
 
     return this.prisma.appointment.update({
       where: { id },
-      data: { status: 'cancelled' },
+      data: { status: 'CANCELLED' },
     });
   }
 
-  async updateStatus(companyId: number, id: number, status: 'in_progress' | 'completed') {
+  async updateStatus(companyId: string, id: string, status: 'SCHEDULED' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED') {
     const appointment = await this.prisma.appointment.findFirst({
       where: { id, companyId },
     });
@@ -212,12 +206,11 @@ export class AppointmentsService {
       include: {
         vehicle: { include: { customer: true } },
         service: true,
-        employee: true,
       },
     });
   }
 
-  async getTodayAppointments(companyId: number) {
+  async getTodayAppointments(companyId: string) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -227,7 +220,7 @@ export class AppointmentsService {
     return this.prisma.appointment.findMany({
       where: {
         companyId,
-        appointmentDate: {
+        scheduledAt: {
           gte: today,
           lt: tomorrow,
         },
@@ -235,9 +228,8 @@ export class AppointmentsService {
       include: {
         vehicle: { include: { customer: true } },
         service: true,
-        employee: true,
       },
-      orderBy: { appointmentDate: 'asc' },
+      orderBy: { scheduledAt: 'asc' },
     });
   }
 }

@@ -1,13 +1,12 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '@/common/prisma/prisma.service';
 import { CreateEmployeeDto, UpdateEmployeeDto } from './dto';
-import * as argon2 from 'argon2';
 
 @Injectable()
 export class EmployeesService {
   constructor(private prisma: PrismaService) {}
 
-  async create(companyId: number, data: CreateEmployeeDto) {
+  async create(companyId: string, data: CreateEmployeeDto) {
     const company = await this.prisma.company.findUnique({
       where: { id: companyId },
     });
@@ -17,34 +16,34 @@ export class EmployeesService {
     }
 
     const existingEmployee = await this.prisma.employee.findFirst({
-      where: { email: data.email },
+      where: { cpf: data.cpf, companyId },
     });
 
     if (existingEmployee) {
-      throw new ConflictException('Email já está em uso');
+      throw new ConflictException('CPF já está em uso');
     }
-
-    const hashedPassword = await argon2.hash(data.password);
 
     return this.prisma.employee.create({
       data: {
         name: data.name,
+        cpf: data.cpf,
         email: data.email,
         phone: data.phone,
         role: data.role,
-        status: 'active',
-        password: hashedPassword,
+        status: 'ACTIVE',
+        hiredAt: new Date(),
         companyId,
       },
     });
   }
 
-  async findAll(companyId: number) {
+  async findAll(companyId: string) {
     return this.prisma.employee.findMany({
       where: { companyId },
       select: {
         id: true,
         name: true,
+        cpf: true,
         email: true,
         phone: true,
         role: true,
@@ -55,18 +54,20 @@ export class EmployeesService {
     });
   }
 
-  async findById(companyId: number, id: number) {
+  async findById(companyId: string, id: string) {
     const employee = await this.prisma.employee.findFirst({
       where: { id, companyId },
       select: {
         id: true,
         name: true,
+        cpf: true,
         email: true,
         phone: true,
         role: true,
         status: true,
+        salary: true,
+        commissionPercentage: true,
         createdAt: true,
-        appointments: { take: 10 },
       },
     });
 
@@ -77,23 +78,13 @@ export class EmployeesService {
     return employee;
   }
 
-  async update(companyId: number, id: number, data: UpdateEmployeeDto) {
+  async update(companyId: string, id: string, data: UpdateEmployeeDto) {
     const employee = await this.prisma.employee.findFirst({
       where: { id, companyId },
     });
 
     if (!employee) {
       throw new NotFoundException('Funcionário não encontrado');
-    }
-
-    if (data.email && data.email !== employee.email) {
-      const existingEmployee = await this.prisma.employee.findFirst({
-        where: { email: data.email },
-      });
-
-      if (existingEmployee) {
-        throw new ConflictException('Email já está em uso');
-      }
     }
 
     const updateData: any = {
@@ -104,16 +95,13 @@ export class EmployeesService {
       status: data.status ?? employee.status,
     };
 
-    if (data.password) {
-      updateData.password = await argon2.hash(data.password);
-    }
-
     return this.prisma.employee.update({
       where: { id },
       data: updateData,
       select: {
         id: true,
         name: true,
+        cpf: true,
         email: true,
         phone: true,
         role: true,
@@ -122,7 +110,7 @@ export class EmployeesService {
     });
   }
 
-  async delete(companyId: number, id: number) {
+  async delete(companyId: string, id: string) {
     const employee = await this.prisma.employee.findFirst({
       where: { id, companyId },
     });

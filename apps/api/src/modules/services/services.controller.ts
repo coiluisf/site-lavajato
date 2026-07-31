@@ -20,12 +20,9 @@ export class ServicesController {
 
   @Post()
   async create(@Param('companyId') companyId: string, @Body() body: unknown) {
-    const id = parseInt(companyId);
-    if (isNaN(id)) throw new BadRequestException('Company ID inválido');
-
     try {
       const data = CreateServiceSchema.parse(body);
-      return this.servicesService.create(id, data);
+      return this.servicesService.create(companyId, data);
     } catch (error) {
       if (error instanceof Error) {
         throw new BadRequestException(error.message);
@@ -36,22 +33,12 @@ export class ServicesController {
 
   @Get()
   async findAll(@Param('companyId') companyId: string) {
-    const id = parseInt(companyId);
-    if (isNaN(id)) throw new BadRequestException('Company ID inválido');
-
-    return this.servicesService.findAll(id);
+    return this.servicesService.findAll(companyId);
   }
 
   @Get(':id')
   async findById(@Param('companyId') companyId: string, @Param('id') id: string) {
-    const cId = parseInt(companyId);
-    const serviceId = parseInt(id);
-
-    if (isNaN(cId) || isNaN(serviceId)) {
-      throw new BadRequestException('IDs inválidos');
-    }
-
-    return this.servicesService.findById(cId, serviceId);
+    return this.servicesService.findById(companyId, id);
   }
 
   @Put(':id')
@@ -60,16 +47,9 @@ export class ServicesController {
     @Param('id') id: string,
     @Body() body: unknown,
   ) {
-    const cId = parseInt(companyId);
-    const serviceId = parseInt(id);
-
-    if (isNaN(cId) || isNaN(serviceId)) {
-      throw new BadRequestException('IDs inválidos');
-    }
-
     try {
       const data = UpdateServiceSchema.parse(body);
-      return this.servicesService.update(cId, serviceId, data);
+      return this.servicesService.update(companyId, id, data);
     } catch (error) {
       if (error instanceof Error) {
         throw new BadRequestException(error.message);
@@ -80,13 +60,6 @@ export class ServicesController {
 
   @Delete(':id')
   async delete(@Param('companyId') companyId: string, @Param('id') id: string) {
-    const cId = parseInt(companyId);
-    const serviceId = parseInt(id);
-
-    if (isNaN(cId) || isNaN(serviceId)) {
-      throw new BadRequestException('IDs inválidos');
-    }
-
-    return this.servicesService.delete(cId, serviceId);
+    return this.servicesService.delete(companyId, id);
   }
 }

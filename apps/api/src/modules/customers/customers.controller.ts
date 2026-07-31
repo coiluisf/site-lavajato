@@ -21,12 +21,9 @@ export class CustomersController {
 
   @Post()
   async create(@Param('companyId') companyId: string, @Body() body: unknown) {
-    const id = parseInt(companyId);
-    if (isNaN(id)) throw new BadRequestException('Company ID inválido');
-
     try {
       const data = CreateCustomerSchema.parse(body);
-      return this.customersService.create(id, data);
+      return this.customersService.create(companyId, data);
     } catch (error) {
       if (error instanceof Error) {
         throw new BadRequestException(error.message);
@@ -41,34 +38,22 @@ export class CustomersController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    const id = parseInt(companyId);
-    if (isNaN(id)) throw new BadRequestException('Company ID inválido');
-
     const pageNum = page ? parseInt(page) : 1;
     const limitNum = limit ? parseInt(limit) : 20;
 
-    return this.customersService.findAll(id, pageNum, limitNum);
+    return this.customersService.findAll(companyId, pageNum, limitNum);
   }
 
   @Get('search')
   async search(@Param('companyId') companyId: string, @Query('q') query: string) {
-    const id = parseInt(companyId);
-    if (isNaN(id)) throw new BadRequestException('Company ID inválido');
     if (!query) throw new BadRequestException('Query obrigatória');
 
-    return this.customersService.search(id, query);
+    return this.customersService.search(companyId, query);
   }
 
   @Get(':id')
   async findById(@Param('companyId') companyId: string, @Param('id') id: string) {
-    const cId = parseInt(companyId);
-    const customerId = parseInt(id);
-
-    if (isNaN(cId) || isNaN(customerId)) {
-      throw new BadRequestException('IDs inválidos');
-    }
-
-    return this.customersService.findById(cId, customerId);
+    return this.customersService.findById(companyId, id);
   }
 
   @Put(':id')
@@ -77,16 +62,9 @@ export class CustomersController {
     @Param('id') id: string,
     @Body() body: unknown,
   ) {
-    const cId = parseInt(companyId);
-    const customerId = parseInt(id);
-
-    if (isNaN(cId) || isNaN(customerId)) {
-      throw new BadRequestException('IDs inválidos');
-    }
-
     try {
       const data = UpdateCustomerSchema.parse(body);
-      return this.customersService.update(cId, customerId, data);
+      return this.customersService.update(companyId, id, data);
     } catch (error) {
       if (error instanceof Error) {
         throw new BadRequestException(error.message);
@@ -97,13 +75,6 @@ export class CustomersController {
 
   @Delete(':id')
   async delete(@Param('companyId') companyId: string, @Param('id') id: string) {
-    const cId = parseInt(companyId);
-    const customerId = parseInt(id);
-
-    if (isNaN(cId) || isNaN(customerId)) {
-      throw new BadRequestException('IDs inválidos');
-    }
-
-    return this.customersService.delete(cId, customerId);
+    return this.customersService.delete(companyId, id);
   }
 }

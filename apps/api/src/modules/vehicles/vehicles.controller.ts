@@ -24,16 +24,9 @@ export class VehiclesController {
     @Param('customerId') customerId: string,
     @Body() body: unknown,
   ) {
-    const cId = parseInt(companyId);
-    const custId = parseInt(customerId);
-
-    if (isNaN(cId) || isNaN(custId)) {
-      throw new BadRequestException('IDs inválidos');
-    }
-
     try {
       const data = CreateVehicleSchema.parse(body);
-      return this.vehiclesService.create(cId, custId, data);
+      return this.vehiclesService.create(companyId, customerId, data);
     } catch (error) {
       if (error instanceof Error) {
         throw new BadRequestException(error.message);
@@ -44,14 +37,7 @@ export class VehiclesController {
 
   @Get()
   async findAll(@Param('companyId') companyId: string, @Param('customerId') customerId: string) {
-    const cId = parseInt(companyId);
-    const custId = parseInt(customerId);
-
-    if (isNaN(cId) || isNaN(custId)) {
-      throw new BadRequestException('IDs inválidos');
-    }
-
-    return this.vehiclesService.findAll(cId, custId);
+    return this.vehiclesService.findAll(companyId, customerId);
   }
 
   @Get(':id')
@@ -60,15 +46,7 @@ export class VehiclesController {
     @Param('customerId') customerId: string,
     @Param('id') id: string,
   ) {
-    const cId = parseInt(companyId);
-    const custId = parseInt(customerId);
-    const vehicleId = parseInt(id);
-
-    if (isNaN(cId) || isNaN(custId) || isNaN(vehicleId)) {
-      throw new BadRequestException('IDs inválidos');
-    }
-
-    return this.vehiclesService.findById(cId, custId, vehicleId);
+    return this.vehiclesService.findById(companyId, customerId, id);
   }
 
   @Put(':id')
@@ -78,17 +56,9 @@ export class VehiclesController {
     @Param('id') id: string,
     @Body() body: unknown,
   ) {
-    const cId = parseInt(companyId);
-    const custId = parseInt(customerId);
-    const vehicleId = parseInt(id);
-
-    if (isNaN(cId) || isNaN(custId) || isNaN(vehicleId)) {
-      throw new BadRequestException('IDs inválidos');
-    }
-
     try {
       const data = UpdateVehicleSchema.parse(body);
-      return this.vehiclesService.update(cId, custId, vehicleId, data);
+      return this.vehiclesService.update(companyId, customerId, id, data);
     } catch (error) {
       if (error instanceof Error) {
         throw new BadRequestException(error.message);
@@ -103,14 +73,6 @@ export class VehiclesController {
     @Param('customerId') customerId: string,
     @Param('id') id: string,
   ) {
-    const cId = parseInt(companyId);
-    const custId = parseInt(customerId);
-    const vehicleId = parseInt(id);
-
-    if (isNaN(cId) || isNaN(custId) || isNaN(vehicleId)) {
-      throw new BadRequestException('IDs inválidos');
-    }
-
-    return this.vehiclesService.delete(cId, custId, vehicleId);
+    return this.vehiclesService.delete(companyId, customerId, id);
   }
 }

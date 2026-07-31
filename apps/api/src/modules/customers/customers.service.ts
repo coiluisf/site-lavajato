@@ -6,7 +6,7 @@ import { CreateCustomerDto, UpdateCustomerDto } from './dto';
 export class CustomersService {
   constructor(private prisma: PrismaService) {}
 
-  async create(companyId: number, data: CreateCustomerDto) {
+  async create(companyId: string, data: CreateCustomerDto) {
     const company = await this.prisma.company.findUnique({
       where: { id: companyId },
     });
@@ -15,36 +15,29 @@ export class CustomersService {
       throw new NotFoundException('Empresa não encontrada');
     }
 
-    const existingCustomer = await this.prisma.customer.findUnique({
-      where: { document: data.document },
-    });
-
-    if (existingCustomer) {
-      throw new ConflictException('Cliente com este CPF/CNPJ já existe');
-    }
-
     return this.prisma.customer.create({
       data: {
         name: data.name,
-        document: data.document,
+        cpf: data.cpf,
         email: data.email,
         phone: data.phone,
+        whatsapp: data.whatsapp,
         address: data.address,
         city: data.city,
         state: data.state,
-        zipCode: data.zipCode,
+        status: 'ACTIVE',
         companyId,
       },
     });
   }
 
-  async findAll(companyId: number, page = 1, limit = 20) {
+  async findAll(companyId: string, page = 1, limit = 20) {
     const skip = (page - 1) * limit;
 
     const [customers, total] = await Promise.all([
       this.prisma.customer.findMany({
         where: { companyId },
-        include: { vehicles: true, orders: { take: 3 } },
+        include: { vehicles: true },
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
@@ -63,14 +56,13 @@ export class CustomersService {
     };
   }
 
-  async findById(companyId: number, id: number) {
+  async findById(companyId: string, id: string) {
     const customer = await this.prisma.customer.findFirst({
       where: { id, companyId },
       include: {
         vehicles: {
           include: { category: true },
         },
-        orders: { take: 10 },
         appointments: { take: 10 },
       },
     });
@@ -82,41 +74,31 @@ export class CustomersService {
     return customer;
   }
 
-  async update(companyId: number, id: number, data: UpdateCustomerDto) {
+  async update(companyId: string, id: string, data: UpdateCustomerDto) {
     const customer = await this.prisma.customer.findFirst({
       where: { id, companyId },
     });
 
     if (!customer) {
       throw new NotFoundException('Cliente não encontrado');
-    }
-
-    if (data.document && data.document !== customer.document) {
-      const existingCustomer = await this.prisma.customer.findUnique({
-        where: { document: data.document },
-      });
-
-      if (existingCustomer) {
-        throw new ConflictException('CPF/CNPJ já está em uso');
-      }
     }
 
     return this.prisma.customer.update({
       where: { id },
       data: {
         name: data.name ?? customer.name,
-        document: data.document ?? customer.document,
+        cpf: data.cpf ?? customer.cpf,
         email: data.email ?? customer.email,
         phone: data.phone ?? customer.phone,
+        whatsapp: data.whatsapp ?? customer.whatsapp,
         address: data.address ?? customer.address,
         city: data.city ?? customer.city,
         state: data.state ?? customer.state,
-        zipCode: data.zipCode ?? customer.zipCode,
       },
     });
   }
 
-  async delete(companyId: number, id: number) {
+  async delete(companyId: string, id: string) {
     const customer = await this.prisma.customer.findFirst({
       where: { id, companyId },
     });
@@ -125,7 +107,7 @@ export class CustomersService {
       throw new NotFoundException('Cliente não encontrado');
     }
 
-    const hasOrders = await this.prisma.order.count({
+    const hasOrders = await this.prisma.serviceOrder.count({
       where: { customerId: id },
     });
 
@@ -138,14 +120,14 @@ export class CustomersService {
     });
   }
 
-  async search(companyId: number, query: string) {
+  async search(companyId: string, query: string) {
     return this.prisma.customer.findMany({
       where: {
         companyId,
         OR: [
-          { name: { contains: query, mode: 'insensitive' } },
-          { document: { contains: query } },
-          { email: { contains: query, mode: 'insensitive' } },
+          { name: { contains: query } },
+          { cpf: { contains: query } },
+          { email: { contains: query } },
           { phone: { contains: query } },
         ],
       },

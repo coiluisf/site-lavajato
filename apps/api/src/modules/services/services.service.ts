@@ -6,7 +6,7 @@ import { CreateServiceDto, UpdateServiceDto } from './dto';
 export class ServicesService {
   constructor(private prisma: PrismaService) {}
 
-  async create(companyId: number, data: CreateServiceDto) {
+  async create(companyId: string, data: CreateServiceDto) {
     const company = await this.prisma.company.findUnique({
       where: { id: companyId },
     });
@@ -27,26 +27,26 @@ export class ServicesService {
       data: {
         name: data.name,
         description: data.description,
-        duration: data.duration,
-        basePrice: data.basePrice,
+        durationMinutes: data.durationMinutes,
+        isActive: true,
         companyId,
       },
     });
   }
 
-  async findAll(companyId: number) {
+  async findAll(companyId: string) {
     return this.prisma.service.findMany({
-      where: { companyId },
+      where: { companyId, isActive: true },
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  async findById(companyId: number, id: number) {
+  async findById(companyId: string, id: string) {
     const service = await this.prisma.service.findFirst({
       where: { id, companyId },
       include: {
         appointments: { take: 10 },
-        orders: { take: 10 },
+        prices: true,
       },
     });
 
@@ -57,7 +57,7 @@ export class ServicesService {
     return service;
   }
 
-  async update(companyId: number, id: number, data: UpdateServiceDto) {
+  async update(companyId: string, id: string, data: UpdateServiceDto) {
     const service = await this.prisma.service.findFirst({
       where: { id, companyId },
     });
@@ -81,13 +81,12 @@ export class ServicesService {
       data: {
         name: data.name ?? service.name,
         description: data.description ?? service.description,
-        duration: data.duration ?? service.duration,
-        basePrice: data.basePrice ?? service.basePrice,
+        durationMinutes: data.durationMinutes ?? service.durationMinutes,
       },
     });
   }
 
-  async delete(companyId: number, id: number) {
+  async delete(companyId: string, id: string) {
     const service = await this.prisma.service.findFirst({
       where: { id, companyId },
     });
@@ -96,8 +95,9 @@ export class ServicesService {
       throw new NotFoundException('Serviço não encontrado');
     }
 
-    return this.prisma.service.delete({
+    return this.prisma.service.update({
       where: { id },
+      data: { isActive: false },
     });
   }
 }

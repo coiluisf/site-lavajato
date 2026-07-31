@@ -20,12 +20,9 @@ export class EmployeesController {
 
   @Post()
   async create(@Param('companyId') companyId: string, @Body() body: unknown) {
-    const id = parseInt(companyId);
-    if (isNaN(id)) throw new BadRequestException('Company ID inválido');
-
     try {
       const data = CreateEmployeeSchema.parse(body);
-      return this.employeesService.create(id, data);
+      return this.employeesService.create(companyId, data);
     } catch (error) {
       if (error instanceof Error) {
         throw new BadRequestException(error.message);
@@ -36,22 +33,12 @@ export class EmployeesController {
 
   @Get()
   async findAll(@Param('companyId') companyId: string) {
-    const id = parseInt(companyId);
-    if (isNaN(id)) throw new BadRequestException('Company ID inválido');
-
-    return this.employeesService.findAll(id);
+    return this.employeesService.findAll(companyId);
   }
 
   @Get(':id')
   async findById(@Param('companyId') companyId: string, @Param('id') id: string) {
-    const cId = parseInt(companyId);
-    const employeeId = parseInt(id);
-
-    if (isNaN(cId) || isNaN(employeeId)) {
-      throw new BadRequestException('IDs inválidos');
-    }
-
-    return this.employeesService.findById(cId, employeeId);
+    return this.employeesService.findById(companyId, id);
   }
 
   @Put(':id')
@@ -60,16 +47,9 @@ export class EmployeesController {
     @Param('id') id: string,
     @Body() body: unknown,
   ) {
-    const cId = parseInt(companyId);
-    const employeeId = parseInt(id);
-
-    if (isNaN(cId) || isNaN(employeeId)) {
-      throw new BadRequestException('IDs inválidos');
-    }
-
     try {
       const data = UpdateEmployeeSchema.parse(body);
-      return this.employeesService.update(cId, employeeId, data);
+      return this.employeesService.update(companyId, id, data);
     } catch (error) {
       if (error instanceof Error) {
         throw new BadRequestException(error.message);
@@ -80,13 +60,6 @@ export class EmployeesController {
 
   @Delete(':id')
   async delete(@Param('companyId') companyId: string, @Param('id') id: string) {
-    const cId = parseInt(companyId);
-    const employeeId = parseInt(id);
-
-    if (isNaN(cId) || isNaN(employeeId)) {
-      throw new BadRequestException('IDs inválidos');
-    }
-
-    return this.employeesService.delete(cId, employeeId);
+    return this.employeesService.delete(companyId, id);
   }
 }

@@ -6,7 +6,7 @@ import { CreateVehicleDto, UpdateVehicleDto } from './dto';
 export class VehiclesService {
   constructor(private prisma: PrismaService) {}
 
-  async create(companyId: number, customerId: number, data: CreateVehicleDto) {
+  async create(companyId: string, customerId: string, data: CreateVehicleDto) {
     const customer = await this.prisma.customer.findFirst({
       where: { id: customerId, companyId },
     });
@@ -26,17 +26,18 @@ export class VehiclesService {
     return this.prisma.vehicle.create({
       data: {
         plate: data.plate.toUpperCase(),
-        brand: data.brand,
+        make: data.make,
         model: data.model,
         color: data.color,
         year: data.year,
+        companyId,
         customerId,
         categoryId: data.categoryId,
       },
     });
   }
 
-  async findAll(companyId: number, customerId: number) {
+  async findAll(companyId: string, customerId: string) {
     const customer = await this.prisma.customer.findFirst({
       where: { id: customerId, companyId },
     });
@@ -46,18 +47,18 @@ export class VehiclesService {
     }
 
     return this.prisma.vehicle.findMany({
-      where: { customerId },
+      where: { customerId, companyId },
       include: { category: true },
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  async findById(companyId: number, customerId: number, id: number) {
+  async findById(companyId: string, customerId: string, id: string) {
     const vehicle = await this.prisma.vehicle.findFirst({
       where: {
         id,
         customerId,
-        customer: { companyId },
+        companyId,
       },
       include: {
         category: true,
@@ -73,12 +74,12 @@ export class VehiclesService {
     return vehicle;
   }
 
-  async update(companyId: number, customerId: number, id: number, data: UpdateVehicleDto) {
+  async update(companyId: string, customerId: string, id: string, data: UpdateVehicleDto) {
     const vehicle = await this.prisma.vehicle.findFirst({
       where: {
         id,
         customerId,
-        customer: { companyId },
+        companyId,
       },
     });
 
@@ -100,7 +101,7 @@ export class VehiclesService {
       where: { id },
       data: {
         plate: data.plate ? data.plate.toUpperCase() : vehicle.plate,
-        brand: data.brand ?? vehicle.brand,
+        make: data.make ?? vehicle.make,
         model: data.model ?? vehicle.model,
         color: data.color ?? vehicle.color,
         year: data.year ?? vehicle.year,
@@ -109,12 +110,12 @@ export class VehiclesService {
     });
   }
 
-  async delete(companyId: number, customerId: number, id: number) {
+  async delete(companyId: string, customerId: string, id: string) {
     const vehicle = await this.prisma.vehicle.findFirst({
       where: {
         id,
         customerId,
-        customer: { companyId },
+        companyId,
       },
     });
 
@@ -122,7 +123,7 @@ export class VehiclesService {
       throw new NotFoundException('Veículo não encontrado');
     }
 
-    const hasOrders = await this.prisma.order.count({
+    const hasOrders = await this.prisma.serviceOrder.count({
       where: { vehicleId: id },
     });
 

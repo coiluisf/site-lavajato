@@ -6,9 +6,9 @@ import { CreateCompanyDto, UpdateCompanyDto } from './dto';
 export class CompaniesService {
   constructor(private prisma: PrismaService) {}
 
-  async create(data: CreateCompanyDto, userId: number) {
+  async create(data: CreateCompanyDto, userId: string) {
     const existingCompany = await this.prisma.company.findUnique({
-      where: { document: data.document },
+      where: { cnpjCpf: data.cnpjCpf },
     });
 
     if (existingCompany) {
@@ -18,16 +18,13 @@ export class CompaniesService {
     return this.prisma.company.create({
       data: {
         name: data.name,
-        document: data.document,
+        displayName: data.displayName,
+        cnpjCpf: data.cnpjCpf,
         email: data.email,
         phone: data.phone,
+        whatsapp: data.whatsapp,
         address: data.address,
-        city: data.city,
-        state: data.state,
-        zipCode: data.zipCode,
-        monthlyFee: data.monthlyFee,
-        hostingFee: data.hostingFee,
-        createdBy: userId,
+        status: 'ACTIVE',
       },
     });
   }
@@ -42,7 +39,7 @@ export class CompaniesService {
     });
   }
 
-  async findById(id: number) {
+  async findById(id: string) {
     const company = await this.prisma.company.findUnique({
       where: { id },
       include: {
@@ -60,7 +57,7 @@ export class CompaniesService {
     return company;
   }
 
-  async update(id: number, data: UpdateCompanyDto) {
+  async update(id: string, data: UpdateCompanyDto) {
     const company = await this.prisma.company.findUnique({
       where: { id },
     });
@@ -69,9 +66,9 @@ export class CompaniesService {
       throw new NotFoundException('Empresa não encontrada');
     }
 
-    if (data.document && data.document !== company.document) {
+    if (data.cnpjCpf && data.cnpjCpf !== company.cnpjCpf) {
       const existingCompany = await this.prisma.company.findUnique({
-        where: { document: data.document },
+        where: { cnpjCpf: data.cnpjCpf },
       });
 
       if (existingCompany) {
@@ -83,20 +80,17 @@ export class CompaniesService {
       where: { id },
       data: {
         name: data.name ?? company.name,
-        document: data.document ?? company.document,
+        displayName: data.displayName ?? company.displayName,
+        cnpjCpf: data.cnpjCpf ?? company.cnpjCpf,
         email: data.email ?? company.email,
         phone: data.phone ?? company.phone,
+        whatsapp: data.whatsapp ?? company.whatsapp,
         address: data.address ?? company.address,
-        city: data.city ?? company.city,
-        state: data.state ?? company.state,
-        zipCode: data.zipCode ?? company.zipCode,
-        monthlyFee: data.monthlyFee ?? company.monthlyFee,
-        hostingFee: data.hostingFee ?? company.hostingFee,
       },
     });
   }
 
-  async delete(id: number) {
+  async delete(id: string) {
     const company = await this.prisma.company.findUnique({
       where: { id },
     });
@@ -110,7 +104,7 @@ export class CompaniesService {
     });
   }
 
-  async getStats(id: number) {
+  async getStats(id: string) {
     const company = await this.findById(id);
 
     const [totalCustomers, totalAppointments, totalEmployees, totalVehicles] = await Promise.all([

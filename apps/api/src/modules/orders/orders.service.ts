@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '@/common/prisma/prisma.service';
 import { CreateOrderDto, UpdateOrderStatusDto } from './dto';
 
@@ -6,27 +7,26 @@ import { CreateOrderDto, UpdateOrderStatusDto } from './dto';
 export class OrdersService {
   constructor(private prisma: PrismaService) {}
 
-  async create(companyId: number, data: CreateOrderDto) {
+  async create(companyId: string, data: CreateOrderDto) {
     const vehicle = await this.prisma.vehicle.findFirst({
-      where: { id: data.vehicleId, customer: { companyId } },
+      where: { id: data.vehicleId, companyId },
     });
 
     if (!vehicle) {
       throw new NotFoundException('Veículo não encontrado');
     }
 
-    const service = await this.prisma.service.findFirst({
-      where: { id: data.serviceId, companyId },
+    const customer = await this.prisma.customer.findUnique({
+      where: { id: vehicle.customerId },
     });
 
-    if (!service) {
-      throw new NotFoundException('Serviço não encontrado');
+    if (!customer) {
+      throw new NotFoundException('Cliente não encontrado');
     }
 
-    const appointmentId = data.appointmentId ? parseInt(data.appointmentId) : null;
-    if (appointmentId) {
+    if (data.appointmentId) {
       const appointment = await this.prisma.appointment.findFirst({
-        where: { id: appointmentId, companyId },
+        where: { id: data.appointmentId, companyId },
       });
 
       if (!appointment) {
@@ -34,29 +34,31 @@ export class OrdersService {
       }
     }
 
-    const totalPrice = service.basePrice * (data.quantity || 1);
+    const orderCount = await this.prisma.serviceOrder.count({
+      where: { companyId },
+    });
+    const orderNumber = orderCount + 1;
 
-    return this.prisma.order.create({
+    const totalPrice = new Prisma.Decimal(0);
+
+    return this.prisma.serviceOrder.create({
       data: {
-        quantity: data.quantity || 1,
-        totalPrice,
-        status: 'pending',
-        notes: data.notes,
+        orderNumber,
+        status: 'DRAFT',
         vehicleId: data.vehicleId,
         customerId: vehicle.customerId,
-        serviceId: data.serviceId,
-        appointmentId: appointmentId || undefined,
+        appointmentId: data.appointmentId || undefined,
         companyId,
+        totalPrice,
       },
       include: {
         vehicle: { include: { customer: true } },
-        service: true,
         appointment: true,
       },
     });
   }
 
-  async findAll(companyId: number, status?: string, page = 1, limit = 20) {
+  async findAll(companyId: string, status?: string, page = 1, limit = 20) {
     const skip = (page - 1) * limit;
     const where: any = { companyId };
 
@@ -65,18 +67,18 @@ export class OrdersService {
     }
 
     const [orders, total] = await Promise.all([
-      this.prisma.order.findMany({
+      this.prisma.serviceOrder.findMany({
         where,
         include: {
           vehicle: { include: { customer: true } },
-          service: true,
           appointment: true,
+          items: { include: { service: true } },
         },
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
       }),
-      this.prisma.order.count({ where }),
+      this.prisma.serviceOrder.count({ where }),
     ]);
 
     return {
@@ -90,13 +92,13 @@ export class OrdersService {
     };
   }
 
-  async findById(companyId: number, id: number) {
-    const order = await this.prisma.order.findFirst({
+  async findById(companyId: string, id: string) {
+    const order = await this.prisma.serviceOrder.findFirst({
       where: { id, companyId },
       include: {
         vehicle: { include: { customer: true, category: true } },
-        service: true,
         appointment: true,
+        items: { include: { service: true } },
       },
     });
 
@@ -107,8 +109,8 @@ export class OrdersService {
     return order;
   }
 
-  async updateStatus(companyId: number, id: number, data: UpdateOrderStatusDto) {
-    const order = await this.prisma.order.findFirst({
+  async updateStatus(companyId: string, id: string, data: UpdateOrderStatusDto) {
+    const order = await this.prisma.serviceOrder.findFirst({
       where: { id, companyId },
     });
 
@@ -116,26 +118,25 @@ export class OrdersService {
       throw new NotFoundException('Pedido não encontrado');
     }
 
-    if (order.status === 'completed' || order.status === 'cancelled') {
-      throw new BadRequestException('Não é possível alterar pedidos completos ou cancelados');
+    if (order.status === 'DELIVERED' || order.status === 'CANCELLED') {
+      throw new BadRequestException('Não é possível alterar pedidos entregues ou cancelados');
     }
 
-    return this.prisma.order.update({
+    return this.prisma.serviceOrder.update({
       where: { id },
       data: {
         status: data.status,
-        notes: data.notes ?? order.notes,
       },
       include: {
         vehicle: { include: { customer: true } },
-        service: true,
         appointment: true,
+        items: { include: { service: true } },
       },
     });
   }
 
-  async cancel(companyId: number, id: number) {
-    const order = await this.prisma.order.findFirst({
+  async cancel(companyId: string, id: string) {
+    const order = await this.prisma.serviceOrder.findFirst({
       where: { id, companyId },
     });
 
@@ -143,29 +144,32 @@ export class OrdersService {
       throw new NotFoundException('Pedido não encontrado');
     }
 
-    if (order.status === 'completed') {
-      throw new BadRequestException('Não é possível cancelar pedidos completos');
+    if (order.status === 'DELIVERED') {
+      throw new BadRequestException('Não é possível cancelar pedidos entregues');
     }
 
-    return this.prisma.order.update({
+    return this.prisma.serviceOrder.update({
       where: { id },
-      data: { status: 'cancelled' },
+      data: { status: 'CANCELLED' },
     });
   }
 
-  async getCompanyRevenue(companyId: number, days = 30) {
+  async getCompanyRevenue(companyId: string, days = 30) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    const orders = await this.prisma.order.findMany({
+    const orders = await this.prisma.serviceOrder.findMany({
       where: {
         companyId,
-        status: 'completed',
+        status: 'DELIVERED',
         createdAt: { gte: startDate },
       },
     });
 
-    const totalRevenue = orders.reduce((sum, order) => sum + order.totalPrice, 0);
+    const totalRevenue = orders.reduce((sum: number, order: any) => {
+      const price = typeof order.totalPrice === 'object' ? parseFloat(order.totalPrice.toString()) : Number(order.totalPrice);
+      return sum + (price || 0);
+    }, 0);
 
     return {
       totalRevenue,

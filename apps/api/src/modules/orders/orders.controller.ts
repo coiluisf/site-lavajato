@@ -21,12 +21,9 @@ export class OrdersController {
 
   @Post()
   async create(@Param('companyId') companyId: string, @Body() body: unknown) {
-    const id = parseInt(companyId);
-    if (isNaN(id)) throw new BadRequestException('Company ID inválido');
-
     try {
       const data = CreateOrderSchema.parse(body);
-      return this.ordersService.create(id, data);
+      return this.ordersService.create(companyId, data);
     } catch (error) {
       if (error instanceof Error) {
         throw new BadRequestException(error.message);
@@ -37,11 +34,8 @@ export class OrdersController {
 
   @Get('revenue')
   async getRevenue(@Param('companyId') companyId: string, @Query('days') days?: string) {
-    const id = parseInt(companyId);
-    if (isNaN(id)) throw new BadRequestException('Company ID inválido');
-
     const daysNum = days ? parseInt(days) : 30;
-    return this.ordersService.getCompanyRevenue(id, daysNum);
+    return this.ordersService.getCompanyRevenue(companyId, daysNum);
   }
 
   @Get()
@@ -51,25 +45,15 @@ export class OrdersController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    const id = parseInt(companyId);
-    if (isNaN(id)) throw new BadRequestException('Company ID inválido');
-
     const pageNum = page ? parseInt(page) : 1;
     const limitNum = limit ? parseInt(limit) : 20;
 
-    return this.ordersService.findAll(id, status, pageNum, limitNum);
+    return this.ordersService.findAll(companyId, status, pageNum, limitNum);
   }
 
   @Get(':id')
   async findById(@Param('companyId') companyId: string, @Param('id') id: string) {
-    const cId = parseInt(companyId);
-    const orderId = parseInt(id);
-
-    if (isNaN(cId) || isNaN(orderId)) {
-      throw new BadRequestException('IDs inválidos');
-    }
-
-    return this.ordersService.findById(cId, orderId);
+    return this.ordersService.findById(companyId, id);
   }
 
   @Patch(':id/status')
@@ -78,16 +62,9 @@ export class OrdersController {
     @Param('id') id: string,
     @Body() body: unknown,
   ) {
-    const cId = parseInt(companyId);
-    const orderId = parseInt(id);
-
-    if (isNaN(cId) || isNaN(orderId)) {
-      throw new BadRequestException('IDs inválidos');
-    }
-
     try {
       const data = UpdateOrderStatusSchema.parse(body);
-      return this.ordersService.updateStatus(cId, orderId, data);
+      return this.ordersService.updateStatus(companyId, id, data);
     } catch (error) {
       if (error instanceof Error) {
         throw new BadRequestException(error.message);
@@ -98,13 +75,6 @@ export class OrdersController {
 
   @Delete(':id')
   async cancel(@Param('companyId') companyId: string, @Param('id') id: string) {
-    const cId = parseInt(companyId);
-    const orderId = parseInt(id);
-
-    if (isNaN(cId) || isNaN(orderId)) {
-      throw new BadRequestException('IDs inválidos');
-    }
-
-    return this.ordersService.cancel(cId, orderId);
+    return this.ordersService.cancel(companyId, id);
   }
 }
